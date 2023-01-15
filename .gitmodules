@@ -1,0 +1,3 @@
+[submodule "HTTPSRedirect"]
+	path = HTTPSRedirect
+	url = https://github.com/electronicsguy/HTTPSRedirect
