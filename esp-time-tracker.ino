@@ -13,7 +13,7 @@ const int ledPinRed = 0;
 const int buttonPinGreen = 16;
 const int ledPinGreen = 13;
 
-const unsigned long updateIntervallMillis = 20000;
+const unsigned long updateIntervallMillis = 60000;
 
 int buttonStateRed = 0;
 int buttonStateGreen = 0;
@@ -77,6 +77,7 @@ void loop() {
     playTheme(underworld_melody, underworld_tempo, sizeof(underworld_melody) / sizeof(int), buzzerPin);
     if (isWorking()) {
       Serial.println("Send End Work");
+      sendStartStop();
     }
   }
 
@@ -84,6 +85,7 @@ void loop() {
     playTheme(intro_melody, intro_tempo, sizeof(intro_melody) / sizeof(int), buzzerPin);
     if (!isWorking()) {
       Serial.println("Send Start Work");
+      sendStartStop();
     }
   }
 }
@@ -139,7 +141,7 @@ bool isWorking() {
       payload.trim();
       Serial.println(payload);
 
-      if (payload == "true") {
+      if (payload == "working") {
         return true;
       } else {
         return false;
@@ -149,9 +151,39 @@ bool isWorking() {
     }
   }
 
-  Serial.println("Error getting is working data!");
+  Serial.println("Error getting working data!");
   error();
   return false;
+}
+
+void sendStartStop() {
+  Serial.print("Set Start/Stop Data:");
+
+  String state = "stop";
+  if (workState) {
+    state = "start";
+  }
+  int retrys = 5;
+
+  while (0 < retrys) {
+    if (client->GET(url2 + state, host)) {
+      String payload = client->getResponseBody();
+      payload.trim();
+      Serial.println(payload);
+
+      if (payload == "Success" || payload == "No start/stop update") {
+        return;
+      } else {
+        Serial.println("Error getting setting working data!");
+        error();
+      }
+    } else {
+      retrys--;
+    }
+  }
+
+  Serial.println("Error getting setting working data!");
+  error();
 }
 
 void setWorkStateLeds() {
@@ -166,7 +198,7 @@ void playTheme(int melody[], int noteDurations[], int length, int pin) {
     //e.g. quarter note = 1000 / 4, eighth note = 1000/8, etc.
     const int noteDuration = 1000 / noteDurations[thisNote];
     const int pauseBetweenNotes = noteDuration;
-    
+
     tone(buzzerPin, melody[thisNote], noteDuration);
     delay(pauseBetweenNotes);
     noTone(buzzerPin);
