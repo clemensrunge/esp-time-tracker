@@ -17,7 +17,7 @@ const unsigned long updateIntervallMillis = 60000;
 
 int buttonStateRed = 0;
 int buttonStateGreen = 0;
-int workState = 0;
+bool workState = false;
 
 HTTPSRedirect* client = nullptr;
 unsigned long nextUpdateMillis = updateIntervallMillis;
@@ -53,6 +53,7 @@ void setup(void) {
 
 void loop() {
 
+  bool oldWorkState = workState;
   if (nextUpdateMillis < millis()) {
     nextUpdateMillis = millis() + updateIntervallMillis;
     workState = isWorking();
@@ -60,32 +61,31 @@ void loop() {
     delay(300);
   }
 
-  buttonStateRed = digitalRead(buttonPinRed);
-  buttonStateGreen = digitalRead(buttonPinGreen);
-
-  if (buttonStateRed == LOW) {
-    workState = false;
-  }
-
-  if (buttonStateGreen == LOW) {
+  if (digitalRead(buttonPinGreen) == LOW) {
     workState = true;
   }
 
-  setWorkStateLeds();
-
-  if (buttonStateRed == LOW) {
-    playTheme(underworld_melody, underworld_tempo, sizeof(underworld_melody) / sizeof(int), buzzerPin);
-    if (isWorking()) {
-      Serial.println("Send End Work");
-      sendStartStop();
-    }
+  if (digitalRead(buttonPinRed) == LOW) {
+    workState = false;
   }
 
-  if (buttonStateGreen == LOW) {
-    playTheme(intro_melody, intro_tempo, sizeof(intro_melody) / sizeof(int), buzzerPin);
-    if (!isWorking()) {
-      Serial.println("Send Start Work");
-      sendStartStop();
+  if (workState != oldWorkState) {
+    setWorkStateLeds();
+
+    if (workState == false) {
+      playTheme(underworld_melody, underworld_tempo, sizeof(underworld_melody) / sizeof(int), buzzerPin);
+      if (isWorking()) {
+        Serial.println("Send End Work");
+        sendStartStop();
+      }
+    }
+
+    if (workState == true) {
+      playTheme(intro_melody, intro_tempo, sizeof(intro_melody) / sizeof(int), buzzerPin);
+      if (!isWorking()) {
+        Serial.println("Send Start Work");
+        sendStartStop();
+      }
     }
   }
 }
